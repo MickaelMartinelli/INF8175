@@ -38,20 +38,40 @@ class MyPlayer(PlayerDivercite):
             Action: The best action as determined by minimax.
         """
 
-        #TODO
-
+        #Getting players
         player = current_state.get_next_player()
         opponent = current_state.compute_next_player()
+
+        #Initializing the depth limit for the minimax algorithm
         depth_limit = 4
 
-        def state_score(state):
-            return state.get_player_score(player)-state.get_player_score(opponent)
+        def good_start(action):
+            """
+            Determines whether the given action is a good choice for starting a game.
 
-        def is_worth(state, score, step):
-            '''new_score = state_score(state)
-            if new_score == score - 5:
-                return False'''
+            Args:
+                action (LightAction): The action considered for the first move of the game.
+
+            Returns:
+                bool: True if the action is considered good, False otherwise.
+            """
+            
+            if action.data['piece'][1] == 'R':
+                return False
+            position = action.data['position']
             return True
+
+        def state_score(state):
+            """
+            Computes the score gap between the players for the given state.
+
+            Args:
+                state (GameState): The current game state.
+
+            Returns:
+                int: The score gap between the player and their opponent.
+            """
+            return state.get_player_score(player)-state.get_player_score(opponent)
             
         def max_value(state, alpha, beta, depth):
 
@@ -65,23 +85,24 @@ class MyPlayer(PlayerDivercite):
             v_star = - math.inf
             m_star = None
 
-            
             for action in state.get_possible_light_actions():
+
                 new_state = state.apply_action(action)
-                
+
                 if step == 0:
-                    return (state_score(new_state),action)
-
-                if is_worth(new_state, score, step):
+                    if good_start(action):
+                        return (state_score(new_state),action)
+                    else:
+                        continue
                     
-                    (v,m) = min_value(new_state, alpha, beta, depth)
-                    if v > v_star:
-                        v_star = v
-                        m_star = action
-                        alpha = max(alpha, v_star)
+                (v,m) = min_value(new_state, alpha, beta, depth)
+                if v > v_star:
+                    v_star = v
+                    m_star = action
+                    alpha = max(alpha, v_star)
 
-                    if v_star >= beta:
-                        return (v_star, m_star)
+                if v_star >= beta:
+                    return (v_star, m_star)
                     
             return (v_star, m_star)
         
@@ -89,6 +110,7 @@ class MyPlayer(PlayerDivercite):
 
             depth +=1
             score = state_score(state)
+            step = state.get_step()
 
             if state.is_done() or depth>=depth_limit:
                 return((score, None))
@@ -98,8 +120,13 @@ class MyPlayer(PlayerDivercite):
 
             for action in state.get_possible_light_actions():
                 new_state = state.apply_action(action)
+
+                if step == 0:
+                    if good_start(action):
+                        return (state_score(new_state),action)
+                    else:
+                        continue
                 
-                    
                 (v,m) = max_value(new_state, alpha, beta, depth)
                 if v < v_star:
                     v_star = v
